@@ -1,0 +1,84 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wirtschaftskalender</title>
+  <style>
+    body { font-family: sans-serif; background: #f9f9f9; padding: 2rem; color: #333; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1rem; font-size: 14px; }
+    th, td { padding: 8px; border: 1px solid #ccc; }
+    th { background: #eee; }
+    input { padding: 6px; width: 300px; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>📅 Wirtschaftskalender</h1>
+  <input type="text" id="filter" placeholder="Filtern nach Relevanz (High, Medium, Low)" />
+  <table id="calendar">
+    <thead>
+      <tr>
+        <th>Datum</th>
+        <th>Land</th>
+        <th>Ereignis</th>
+        <th>Relevanz</th>
+        <th>Prognose</th>
+        <th>Vorher</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const USER = "45AE1D62658D478";
+    const PASS = "D1FA3E615ABB4C7";
+    const COUNTRIES = ["united states", "euro area", "switzerland", "germany", "france"];
+    const filterInput = document.getElementById("filter");
+
+    function fetchData() {
+      const today = new Date().toISOString().split("T")[0];
+      const url = `https://api.tradingeconomics.com/calendar/country/${COUNTRIES.join(",")}?start_date=2024-01-01&end_date=${today}`;
+
+      fetch(url, {
+        headers: {
+          "Authorization": "Basic " + btoa(`${USER}:${PASS}`)
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        console.log("API Response:", data);
+        const sorted = data.sort((a, b) => new Date(a.date) - new Date(b.date));
+        window.allEvents = sorted;
+        renderTable(sorted);
+      })
+      .catch(err => console.error("Fetch error:", err));
+    }
+
+    function renderTable(events) {
+      const tbody = document.querySelector("#calendar tbody");
+      tbody.innerHTML = "";
+      events.forEach(event => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${new Date(event.date).toLocaleString("de-DE")}</td>
+          <td>${event.country}</td>
+          <td>${event.event}</td>
+          <td>${event.importance || "-"}</td>
+          <td>${event.forecast || "-"}</td>
+          <td>${event.previous || "-"}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    filterInput.addEventListener("input", () => {
+      const val = filterInput.value.toLowerCase();
+      const filtered = window.allEvents.filter(e => e.importance?.toLowerCase().includes(val));
+      renderTable(filtered);
+    });
+
+    fetchData();
+  </script>
+</body>
+</html>
